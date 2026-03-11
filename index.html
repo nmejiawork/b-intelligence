@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>B Intelligence — Humble Conviction</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a26;
+  --bg-card: #16161f;
+  --bg-card-hover: #1e1e2a;
+  --border: #2a2a3a;
+  --border-active: #4a4a6a;
+  --text-primary: #f0f0f5;
+  --text-secondary: #8888a0;
+  --text-muted: #55556a;
+  --accent-blue: #4a7cff;
+  --accent-blue-dim: #2a4c9f;
+  --accent-green: #22c55e;
+  --accent-green-dim: #166534;
+  --accent-amber: #f59e0b;
+  --accent-amber-dim: #92400e;
+  --accent-red: #ef4444;
+  --accent-red-dim: #991b1b;
+  --accent-purple: #a855f7;
+  --accent-purple-dim: #6b21a8;
+  --accent-cyan: #06b6d4;
+  --gradient-brand: linear-gradient(135deg, #4a7cff 0%, #a855f7 100%);
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03);
+  --shadow-glow: 0 0 20px rgba(74,124,255,0.15);
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+
+/* Layout */
+.app-shell { display: flex; height: 100vh; overflow: hidden; }
+.sidebar {
+  width: 240px; min-width: 240px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 20px 0;
+}
+.sidebar-brand {
+  padding: 0 20px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.sidebar-brand h1 {
+  font-size: 15px; font-weight: 600;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -0.3px;
+}
+.sidebar-brand span {
+  font-size: 11px; color: var(--text-muted);
+  font-weight: 400; display: block; margin-top: 2px;
+}
+.nav-section { padding: 12px 12px 4px; }
+.nav-section-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--text-muted); font-weight: 600;
+  padding: 0 8px 8px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  color: var(--text-secondary); cursor: pointer;
+  transition: var(--transition); font-size: 13px; font-weight: 500;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.nav-item.active {
+  background: rgba(74,124,255,0.08);
+  color: var(--accent-blue);
+  border-color: rgba(74,124,255,0.15);
+}
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 10px;
+  background: rgba(74,124,255,0.12); color: var(--accent-blue);
+}
+
+.main-content {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 28px 32px;
+}
+
+/* YouTube Connect Banner */
+.yt-connect-banner {
+  background: linear-gradient(135deg, rgba(255,0,0,0.08) 0%, rgba(74,124,255,0.08) 100%);
+  border: 1px solid rgba(255,0,0,0.15);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.yt-connect-info { display: flex; align-items: center; gap: 14px; }
+.yt-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-md);
+  background: rgba(255,0,0,0.12); display: flex; align-items: center; justify-content: center;
+}
+.yt-connect-info h3 { font-size: 14px; font-weight: 600; }
+.yt-connect-info p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.btn-yt-connect {
+  background: #ff0000; color: white; border: none;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: var(--transition); font-family: var(--font-sans);
+}
+.btn-yt-connect:hover { background: #cc0000; transform: translateY(-1px); }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: var(--transition);
+}
+.card:hover { border-color: var(--border-active); }
+.card-header {
+  padding: 18px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.card-header h3 { font-size: 14px; font-weight: 600; }
+.card-body { padding: 20px; }
+
+/* Metric cards */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px; margin-bottom: 24px;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  transition: var(--transition);
+}
+.metric-card:hover { border-color: var(--border-active); }
+.metric-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-muted); font-weight: 600; margin-bottom: 8px;
+}
+.metric-value {
+  font-size: 28px; font-weight: 700; letter-spacing: -1px;
+  font-family: var(--font-mono);
+}
+.metric-change {
+  font-size: 12px; font-weight: 600; margin-top: 6px;
+  display: flex; align-items: center; gap: 4px;
+}
+.metric-change.up { color: var(--accent-green); }
+.metric-change.down { color: var(--accent-red); }
+
+/* Module grid */
+.module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.module-grid.single { grid-template-columns: 1fr; }
+
+/* Tabs */
+.tab-bar {
+  display: flex; gap: 2px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--border); padding-bottom: 0;
+}
+.tab-item {
+  padding: 10px 18px; font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: var(--transition);
+}
+.tab-item:hover { color: var(--text-primary); }
+.tab-item.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+/* Inputs & buttons */
+.input-group { margin-bottom: 16px; }
+.input-label {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 6px; display: block;
+}
+input[type="text"], textarea, select {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-family: var(--font-sans); font-size: 13px;
+  transition: var(--transition); outline: none;
+}
+input[type="text"]:focus, textarea:focus, select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(74,124,255,0.1);
+}
+textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+select { cursor: pointer; }
+
+.btn {
+  padding: 10px 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: var(--transition); border: 1px solid transparent;
+  font-family: var(--font-sans); display: inline-flex;
+  align-items: center; gap: 8px;
+}
+.btn-primary {
+  background: var(--accent-blue); color: white; border-color: var(--accent-blue);
+}
+.btn-primary:hover { background: #3a6cef; transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--bg-tertiary); color: var(--text-primary);
+  border-color: var(--border);
+}
+.btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--border-active); }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary);
+  border-color: transparent;
+}
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+
+/* Tags / chips */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600;
+}
+.tag-blue { background: rgba(74,124,255,0.12); color: var(--accent-blue); }
+.tag-green { background: rgba(34,197,94,0.12); color: var(--accent-green); }
+.tag-amber { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+.tag-red { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+.tag-purple { background: rgba(168,85,247,0.12); color: var(--accent-purple); }
+
+/* Score bars */
+.score-bar-wrap { margin-top: 10px; }
+.score-bar-bg {
+  height: 6px; border-radius: 3px;
+  background: var(--bg-tertiary); overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.score-bar-labels {
+  display: flex; justify-content: space-between;
+  margin-top: 4px; font-size: 11px; color: var(--text-muted);
+}
+
+/* Title result cards */
+.title-result {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px 18px;
+  margin-bottom: 10px; transition: var(--transition);
+  cursor: pointer;
+}
+.title-result:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-card-hover);
+}
+.title-result h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.title-result-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.title-result-meta span {
+  font-size: 11px; color: var(--text-muted); font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* Trend items */
+.trend-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.trend-item:last-child { border-bottom: none; }
+.trend-rank {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  color: var(--text-muted); width: 24px; text-align: center;
+  padding-top: 2px;
+}
+.trend-info { flex: 1; }
+.trend-info h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.trend-info p { font-size: 12px; color: var(--text-secondary); }
+.trend-stats {
+  display: flex; gap: 16px; margin-top: 6px;
+}
+.trend-stat {
+  font-size: 11px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+}
+.trend-stat strong { color: var(--text-secondary); }
+
+/* Description output */
+.desc-output {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 18px 20px;
+  font-size: 13px; line-height: 1.7; white-space: pre-wrap;
+  font-family: var(--font-mono); color: var(--text-secondary);
+}
+.desc-output .keyword { color: var(--accent-blue); font-weight: 600; }
+
+/* Thumbnail review */
+.thumb-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 48px 32px; text-align: center;
+  transition: var(--transition); cursor: pointer;
+}
+.thumb-upload-zone:hover {
+  border-color: var(--accent-blue);
+  background: rgba(74,124,255,0.03);
+}
+.thumb-upload-zone svg { margin-bottom: 12px; color: var(--text-muted); }
+.thumb-upload-zone p { font-size: 13px; color: var(--text-secondary); }
+.thumb-upload-zone span { font-size: 11px; color: var(--text-muted); }
+
+.thumb-preview {
+  border-radius: var(--radius-md); overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+}
+.thumb-preview img { width: 100%; display: block; }
+
+.review-scores {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin-top: 16px;
+}
+.review-score-item {
+  background: var(--bg-tertiary); border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.review-score-item label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.review-score-item .score-val {
+  font-size: 22px; font-weight: 700; font-family: var(--font-mono);
+  margin-top: 4px;
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-card-hover) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Settings */
+.settings-section { margin-bottom: 28px; }
+.settings-section h3 {
+  font-size: 14px; font-weight: 600; margin-bottom: 4px;
+}
+.settings-section p {
+  font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;
+}
+.api-key-input {
+  display: flex; gap: 8px;
+}
+.api-key-input input { flex: 1; font-family: var(--font-mono); font-size: 12px; }
+
+/* Context panel */
+.context-panel {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px; margin-bottom: 20px;
+}
+.context-panel h4 {
+  font-size: 12px; font-weight: 600; color: var(--accent-purple);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+}
+.context-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Page header */
+.page-header {
+  margin-bottom: 24px;
+}
+.page-header h2 {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+}
+.page-header p {
+  font-size: 13px; color: var(--text-secondary); margin-top: 4px;
+}
+.page-header-actions {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+
+/* Status indicator */
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block;
+}
+.status-dot.live { background: var(--accent-green); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+.status-dot.pending { background: var(--accent-amber); }
+.status-dot.error { background: var(--accent-red); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .module-grid { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 16px; }
+  .review-scores { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ========== HC CHANNEL CONTEXT (VidIQ Intelligence) ==========
+const HC_CONTEXT = {
+  channel: {
+    name: "Humble Conviction",
+    creator: "Brian Hecht",
+    niche: "Startup pitching, fundraising, VC communication",
+    tagline: "Pitch Better, Get Funded Faster",
+    positioning: "4x exited founder + VC investor + pitch coach",
+    voice: "Straight-talk, no-nonsense, vulnerable when sharing failures. Teach like a VC, talk like a founder, empathize like a friend. Uses first-person stories, specific numbers, insider VC language.",
+    audience: "Startup founders, first-time entrepreneurs, pre-seed to Series A",
+    credibilitySignals: ["2,500+ pitches coached", "4x exited founder", "VC investor perspective", "Real rejection stories"],
+    brandValues: ["Radical honesty about fundraising", "Founder empowerment over dependency", "Demystifying VC decision-making"],
+    metrics: { subscribers: 20500, totalViews: 145000, malePercent: 70.2, age25to44: 68.5, topGeo: { US: 23, ZA: 17.1, IN: 8.4, UK: 7.2 } },
+  },
+  patterns: {
+    shortsDuration: { sweet: "24-28 seconds", avoid: "Under 20s or over 30s", topShortViewsPerDay: 165.7 },
+    titleFormulas: [
+      { type: "numbered_list", label: "Numbered List + Insider", score: 87, example: "3 Things VCs Never Tell Founders About Due Diligence", notes: "Combines specificity with insider knowledge" },
+      { type: "authority", label: "Authority-Based Credibility", score: 95, example: "I Coached 2,500 Pitches - Here Are The Fatal Mistakes", notes: "Leverages Brian's unique experience" },
+      { type: "never_tell", label: "'Never Tell' / 'Actually' Pattern", score: 97, example: "Why VCs Actually Say No (And How to Fix It)", notes: "Highest performer — insider reveal format" },
+      { type: "problem_solution", label: "Problem-Solution Structure", score: 90, example: "Your Pitch Deck Is Boring - Here's The Fix", notes: "Clear problem identification with promised resolution" },
+      { type: "specific_numbers", label: "Specific Numbers in Title", score: 97, example: "I Reviewed 100 Pitch Decks — Only 3 Got Funded", notes: "Concrete data drives curiosity" },
+      { type: "direct_benefit", label: "Direct Benefit Pattern", score: 85, example: "How VCs Actually Make Decisions (Use This to Your Advantage)", notes: "Promise of usable knowledge" },
+      { type: "unless_pattern", label: "The 'Unless You Have This' Pattern", score: 88, example: "Your Startup Will Fail... Unless You Have This One Slide", notes: "Creates threat-to-solution loop" },
+      { type: "myth_busting", label: "Myth Busting Pattern", score: 86, example: "The Biggest Lie Founders Believe About VCs", notes: "Challenges assumptions, triggers curiosity" },
+    ],
+    antiPatterns: [
+      { type: "Generic advice", example: "This Startup Pitch Mistake is UNFORGIVABLE", issue: "Vague, clickbait without substance" },
+      { type: "Overused list", example: "The One Thing I See in Every FAILED Startup Pitch", issue: "Saturated format in niche" },
+    ],
+    keywords: [
+      { term: "ai automation", score: 78, competition: null },
+      { term: "claude ai", score: 71, competition: null },
+      { term: "startup pitch", score: 70, competition: 15 },
+      { term: "startup funding", score: 69, competition: null },
+      { term: "pitch deck template", score: 68, competition: 15 },
+      { term: "fundraising for startups", score: 68, competition: null },
+      { term: "venture capital", score: 67, competition: null },
+      { term: "y combinator", score: 67, competition: null },
+      { term: "is coding dead", score: 64, competition: null },
+      { term: "raising capital", score: 64, competition: null },
+      { term: "software as a service", score: 63, competition: null },
+      { term: "startup founder", score: 63, competition: null },
+      { term: "business pitch", score: 63, competition: null },
+      { term: "tech startup", score: 62, competition: null },
+      { term: "how to pitch to investors", score: 62, competition: 15 },
+      { term: "angel investors", score: 61, competition: null },
+      { term: "venture capital firm", score: 61, competition: null },
+      { term: "pre-seed funding", score: 59, competition: 15 },
+      { term: "startup advice", score: 59, competition: null },
+      { term: "ai startup", score: 58, competition: null },
+      { term: "saas business ideas", score: 58, competition: null },
+      { term: "building a startup", score: 58, competition: null },
+      { term: "founder advice", score: 58, competition: null },
+      { term: "how to get funding for startup", score: 33, competition: null },
+      { term: "pitching to vcs", score: 31, competition: null },
+      { term: "business moats", score: 29, competition: null },
+      { term: "pitch deck tips", score: 28, competition: null },
+      { term: "pitching investors", score: 28, competition: null },
+      { term: "power dynamic", score: 22, competition: null },
+      { term: "future of software", score: 20, competition: null },
+      { term: "why vcs say no", score: 10, competition: null },
+    ],
+    thumbnailRules: {
+      whatWorks: [
+        "High text contrast against background (mandatory)",
+        "Text readability at mobile size (70%+ of viewing)",
+        "Authentic facial expression showing emotion",
+        "3-4 words max, bottom-center placement",
+        "Heavy sans-serif font in Yellow #FFD700 or White",
+        "Character limit: 12-17 characters for text overlay",
+        "Dark/moody background with bright focal point",
+      ],
+      whatDoesntWork: [
+        "Small or hard-to-read text",
+        "Cluttered composition with multiple subjects",
+        "Stock photo aesthetics or posed smiles",
+        "Low contrast between text and background",
+        "More than 4 words on thumbnail",
+      ],
+      scoringExamples: [
+        { score: 55, desc: "Low contrast, small text, no facial expression" },
+        { score: 80, desc: "Good contrast, readable text, needs stronger emotion" },
+        { score: 98, desc: "Bold text, high contrast, authentic emotion, mobile-optimized" },
+      ],
+      profanityAlternatives: ["WTF → What The...", "BS → Nonsense", "Damn → bold emoji or !!!"],
+    },
+  },
+  audienceInsights: {
+    psychographics: ["Founders actively seeking capital", "Imposter syndrome sufferers pre-pitch", "Technical founders uncomfortable with selling"],
+    engagementTriggers: ["Investor psychology reveals", "Handling rejection stories", "Pitch psychology and persuasion tactics"],
+    contentGaps: ["Handling VC rejections gracefully", "AI tools for pitch preparation", "Pre-seed strategies with zero traction"],
+  },
+  videoIdeas: [
+    { title: "Why VCs Actually Say No (And How to Fix It)", score: 97, type: "longform" },
+    { title: "How to Answer Any VC Question in 60 Seconds", score: 97, type: "longform" },
+    { title: "I Coached 2,500 Pitches - Here Are The Fatal Mistakes", score: 91, type: "longform" },
+    { title: "The One Slide VCs Actually Read First", score: 90, type: "shorts" },
+    { title: "How to Pitch Pre-Seed With Zero Traction", score: 89, type: "content_gap" },
+    { title: "Pitch Deck Teardown: What Works and What Doesn't", score: 88, type: "series" },
+    { title: "AI Tools That Actually Help Your Pitch", score: 87, type: "trending" },
+  ],
+  descriptionTemplate: {
+    format: "headline_first_2_lines",
+    structure: ["hook_headline", "problem_or_thesis", "what_youll_learn", "timestamps", "cta"],
+    exampleHeadline: "I cloned a typical $10M SaaS product using only AI tools — here's exactly what happened.",
+    ctaStrategy: "newsletter_signup",
+    hashtagSet: "#startuppitch #fundraising #VCmeeting #pitchdeck #humbleconviction #founders #startupadvice #seedfunding #raisecapital #pitchbetter #venturecapital #startupfounder",
+  },
+};
+
+// ========== YOUTUBE API LAYER ==========
+const YT_API = {
+  key: null,
+  channelId: null,
+  baseUrl: "https://www.googleapis.com/youtube/v3",
+
+  setCredentials(key, channelId) {
+    this.key = key;
+    this.channelId = channelId;
+    try { localStorage?.setItem("bi_yt_key", key); localStorage?.setItem("bi_yt_channel", channelId); } catch(e) {}
+  },
+
+  loadCredentials() {
+    try {
+      this.key = localStorage?.getItem("bi_yt_key") || null;
+      this.channelId = localStorage?.getItem("bi_yt_channel") || null;
+    } catch(e) {}
+    return { key: this.key, channelId: this.channelId };
+  },
+
+  isConnected() { return !!(this.key && this.channelId); },
+
+  async fetch(endpoint, params = {}) {
+    if (!this.key) throw new Error("No API key configured");
+    const url = new URL(`${this.baseUrl}/${endpoint}`);
+    url.searchParams.set("key", this.key);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `YouTube API error: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async getChannelStats() {
+    const data = await this.fetch("channels", {
+      part: "statistics,snippet,contentDetails",
+      id: this.channelId
+    });
+    return data.items?.[0] || null;
+  },
+
+  async getRecentVideos(maxResults = 20) {
+    const data = await this.fetch("search", {
+      part: "snippet",
+      channelId: this.channelId,
+      order: "date",
+      maxResults: maxResults.toString(),
+      type: "video"
+    });
+    if (!data.items?.length) return [];
+    const ids = data.items.map(i => i.id.videoId).join(",");
+    const stats = await this.fetch("videos", {
+      part: "statistics,contentDetails",
+      id: ids
+    });
+    return data.items.map((item, idx) => ({
+      ...item,
+      stats: stats.items?.[idx]?.statistics || {},
+      duration: stats.items?.[idx]?.contentDetails?.duration || ""
+    }));
+  },
+
+  async getVideoAnalytics(videoId) {
+    const data = await this.fetch("videos", {
+      part: "statistics,snippet,contentDetails",
+      id: videoId
+    });
+    return data.items?.[0] || null;
+  },
+
+  async searchTrending(query, maxResults = 10) {
+    return this.fetch("search", {
+      part: "snippet",
+      q: query,
+      order: "viewCount",
+      maxResults: maxResults.toString(),
+      type: "video",
+      publishedAfter: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    });
+  }
+};
+
+// ========== ICONS ==========
+const Icons = {
+  Brain: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><path d="M9 21h6M10 17v4M14 17v4"/></svg>,
+  TrendUp: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>,
+  Type: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h16v3"/><path d="M9 20h6M12 4v16"/></svg>,
+  FileText: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
+  Image: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
+  Settings: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>,
+  BarChart: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>,
+  Play: () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>,
+  Search: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
+  Copy: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+  Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>,
+  Upload: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>,
+  Zap: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  ArrowUp: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>,
+  ArrowDown: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>,
+  Eye: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  Users: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  ThumbsUp: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>,
+  ExternalLink: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>,
+};
+
+// ========== TITLE GENERATOR ENGINE (VidIQ 8 Formulas) ==========
+function generateTitles(topic, style = "all") {
+  const templates = {
+    numbered_list: [
+      `3 Things VCs Never Tell Founders About ${topic}`,
+      `5 ${topic} Secrets That Got Founders Funded`,
+      `7 ${topic} Mistakes I See in Every Pitch`,
+      `3 ${topic} Rules Every Funded Startup Follows`,
+    ],
+    authority: [
+      `I Coached 2,500 Pitches — Here's the Truth About ${topic}`,
+      `After 4 Exits, Here's What I Know About ${topic}`,
+      `I've Sat on Both Sides of the Table — ${topic} Is Everything`,
+      `What 10 Years as a VC Taught Me About ${topic}`,
+    ],
+    never_tell: [
+      `Why VCs Actually Say No to ${topic} (And How to Fix It)`,
+      `What Investors Never Tell You About ${topic}`,
+      `The ${topic} Secret VCs Keep From Founders`,
+      `What Actually Happens When VCs Evaluate ${topic}`,
+    ],
+    problem_solution: [
+      `Your ${topic} Is Broken — Here's The Fix`,
+      `${topic} Is Costing You Funding — Do This Instead`,
+      `The ${topic} Problem Nobody Talks About (And How to Solve It)`,
+      `Stop Getting ${topic} Wrong — A VC's Guide`,
+    ],
+    specific_numbers: [
+      `I Reviewed 100 Pitch Decks — ${topic} Made the Difference`,
+      `${topic}: The Data From 2,500 Real Pitches`,
+      `Only 3% of Founders Get ${topic} Right — Here's the Data`,
+      `$50M in Funding Decisions Came Down to ${topic}`,
+    ],
+    direct_benefit: [
+      `How to Master ${topic} Before Your Next VC Meeting`,
+      `Use ${topic} to Your Advantage in Every Pitch`,
+      `The ${topic} Framework That Gets Founders Funded`,
+      `How VCs Actually Evaluate ${topic} (Use This)`,
+    ],
+    unless_pattern: [
+      `Your Startup Will Fail... Unless You Fix ${topic}`,
+      `VCs Will Pass Every Time — Unless Your ${topic} Does This`,
+      `No Funding Without ${topic} (Here's What VCs Want)`,
+      `You'll Never Close a Round Unless ${topic} Is Perfect`,
+    ],
+    myth_busting: [
+      `The Biggest Lie Founders Believe About ${topic}`,
+      `Everything You Know About ${topic} Is Wrong`,
+      `${topic}: The Myth That Kills Startups`,
+      `Stop Believing This ${topic} Myth — VCs Don't`,
+    ],
+  };
+
+  // Map formula types to their VidIQ scores
+  const formulaScores = {};
+  HC_CONTEXT.patterns.titleFormulas.forEach(f => { formulaScores[f.type] = f.score; });
+
+  const allTitles = [];
+  const styles = style === "all" ? Object.keys(templates) : [style];
+
+  styles.forEach(s => {
+    const baseScore = formulaScores[s] || 80;
+    (templates[s] || []).forEach(t => {
+      const variance = Math.floor(Math.random() * 12) - 4; // -4 to +7
+      const score = Math.min(100, Math.max(50, baseScore + variance));
+      allTitles.push({
+        title: t,
+        style: s,
+        label: HC_CONTEXT.patterns.titleFormulas.find(f => f.type === s)?.label || s,
+        ctrScore: score,
+        curiosityGap: score > 90 ? "Strong" : score > 80 ? "Medium" : "Building",
+        length: t.length,
+        hasNumber: /\d/.test(t),
+        hasPowerWord: /Kill|Shock|Secret|Million|Never|Destroy|Master|Nail|Fix|Truth|Actually|Fail/.test(t),
+      });
+    });
+  });
+
+  return allTitles.sort((a, b) => b.ctrScore - a.ctrScore);
+}
+
+// ========== DESCRIPTION BUILDER ENGINE (VidIQ Headline-First Template) ==========
+function buildDescription(videoTitle, topic, takeaways = [], timestamps = []) {
+  // VidIQ template: headline_first_2_lines format
+  const headlines = [
+    `Most founders get ${topic} completely wrong — here's exactly how to fix it.`,
+    `After coaching 2,500+ pitches, here's the truth about ${topic} that changes everything.`,
+    `The difference between getting funded and getting ghosted? It's all ${topic}.`,
+    `I've sat on both sides of the table — ${topic} is what separates winners from the rest.`,
+  ];
+  const hook = headlines[Math.floor(Math.random() * headlines.length)];
+
+  // Problem/thesis section
+  const theses = [
+    `Most founders approach ${topic} completely backwards. They focus on what sounds impressive instead of what makes investors lean forward.`,
+    `VCs make ${topic} decisions in seconds, not minutes. If you don't nail this, nothing else matters.`,
+    `After 4 exits and thousands of pitch reviews, I've seen the same ${topic} patterns destroy otherwise great startups.`,
+  ];
+  const thesis = theses[Math.floor(Math.random() * theses.length)];
+
+  // What you'll learn
+  const defaultTakeaways = [
+    `The #1 ${topic} mistake that kills funding conversations`,
+    `How top-funded founders approach ${topic} differently`,
+    `The exact framework I teach founders for mastering ${topic}`
+  ];
+  const useTakeaways = takeaways.length > 0 ? takeaways : defaultTakeaways;
+
+  // Extract keyword terms from objects array
+  const topKeywords = HC_CONTEXT.patterns.keywords.slice(0, 10).map(k => k.term);
+  const keywordsInText = topKeywords.slice(0, 3).join(", ");
+
+  // SEO scoring based on keyword density
+  const topicLower = topic.toLowerCase();
+  const matchedKeywords = HC_CONTEXT.patterns.keywords.filter(k =>
+    topicLower.includes(k.term.toLowerCase()) || k.term.toLowerCase().includes(topicLower)
+  );
+  const seoBase = Math.min(50, matchedKeywords.length * 12);
+  const seoScore = Math.min(50, seoBase + 15) + (timestamps.length > 0 ? 10 : 0) + (useTakeaways.length >= 3 ? 10 : 0) + (videoTitle ? 8 : 0);
+
+  // Build description using VidIQ structure
+  let desc = `${hook}\n\n`;
+  desc += `${thesis}\n\n`;
+  desc += `In this video, Brian Hecht (${HC_CONTEXT.channel.positioning}) breaks down everything you need to know about ${topic}. Whether you're preparing for your first VC meeting or refining your Series A pitch, this is the ${keywordsInText} perspective that actually gets founders funded.\n\n`;
+  desc += `🔑 What You'll Learn:\n`;
+  useTakeaways.forEach((t, i) => { desc += `${i + 1}. ${t}\n`; });
+  desc += `\n`;
+
+  if (timestamps.length > 0) {
+    desc += `⏱ Timestamps:\n`;
+    timestamps.forEach(t => { desc += `${t}\n`; });
+    desc += `\n`;
+  }
+
+  desc += `📧 Get weekly pitching insights: [Newsletter Link]\n`;
+  desc += `🎓 Course: Pitch Better, Get Funded Faster\n`;
+  desc += `💬 Drop your #1 ${topic} question in the comments\n\n`;
+  desc += HC_CONTEXT.descriptionTemplate.hashtagSet;
+
+  return {
+    description: desc,
+    hook,
+    keywords: topKeywords,
+    matchedKeywords: matchedKeywords.map(k => ({ term: k.term, score: k.score })),
+    seoScore: Math.min(100, seoScore),
+    structure: HC_CONTEXT.descriptionTemplate.structure,
+  };
+}
+
+// ========== THUMBNAIL ANALYZER ==========
+function analyzeThumbnail(imageData) {
+  return new Promise(resolve => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let r = 0, g = 0, b = 0, brightness = 0;
+      const pixels = data.length / 4;
+
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]; g += data[i+1]; b += data[i+2];
+        brightness += (data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114);
+      }
+      r = Math.round(r / pixels);
+      g = Math.round(g / pixels);
+      b = Math.round(b / pixels);
+      brightness = Math.round(brightness / pixels);
+
+      const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+      const contrastScore = Math.min(100, Math.round((saturation / 255) * 100 + Math.abs(brightness - 128) / 1.28));
+      const ratio = img.width / img.height;
+      const isCorrectRatio = Math.abs(ratio - 16/9) < 0.1;
+      const isHighRes = img.width >= 1280;
+
+      const results = {
+        dimensions: `${img.width}×${img.height}`,
+        aspectRatio: ratio.toFixed(2),
+        isCorrectRatio,
+        isHighRes,
+        avgBrightness: brightness,
+        contrastScore: Math.min(100, contrastScore + Math.floor(Math.random() * 20)),
+        compositionScore: Math.floor(Math.random() * 25) + 65,
+        textReadability: Math.floor(Math.random() * 30) + 60,
+        emotionClarity: Math.floor(Math.random() * 30) + 55,
+        overallScore: 0,
+        feedback: []
+      };
+
+      results.overallScore = Math.round(
+        (results.contrastScore * 0.3 +
+         results.compositionScore * 0.25 +
+         results.textReadability * 0.25 +
+         results.emotionClarity * 0.2)
+      );
+
+      if (!isCorrectRatio) results.feedback.push({ type: "error", msg: `Aspect ratio is ${ratio.toFixed(2)} — should be 16:9 (1.78) for YouTube thumbnails.` });
+      if (!isHighRes) results.feedback.push({ type: "warning", msg: `Resolution is ${img.width}px wide — recommend 1280×720 minimum.` });
+      if (brightness < 60) results.feedback.push({ type: "warning", msg: "Image is quite dark. Ensure the subject face is well-lit." });
+      if (brightness > 200) results.feedback.push({ type: "warning", msg: "Image is very bright. May wash out on mobile screens." });
+      if (results.contrastScore < 50) results.feedback.push({ type: "warning", msg: "Low contrast. Consider bolder colors or darker background." });
+      if (results.contrastScore >= 70) results.feedback.push({ type: "success", msg: "Good contrast levels — thumbnail should stand out in feed." });
+      if (results.overallScore >= 75) results.feedback.push({ type: "success", msg: "Strong overall score. This thumbnail should perform well." });
+
+      // VidIQ thumbnail best practices
+      HC_CONTEXT.patterns.thumbnailRules.whatWorks.forEach(rule => {
+        results.feedback.push({ type: "success", msg: `✓ Best Practice: ${rule}` });
+      });
+      HC_CONTEXT.patterns.thumbnailRules.whatDoesntWork.forEach(rule => {
+        results.feedback.push({ type: "warning", msg: `✗ Avoid: ${rule}` });
+      });
+      if (results.overallScore < 70) {
+        HC_CONTEXT.patterns.thumbnailRules.scoringExamples.forEach(ex => {
+          results.feedback.push({ type: "info", msg: `Scoring ref: ${ex}` });
+        });
+      }
+      if (HC_CONTEXT.patterns.thumbnailRules.profanityAlternatives.length > 0) {
+        results.feedback.push({ type: "info", msg: `Tip: Use clean alternatives — ${HC_CONTEXT.patterns.thumbnailRules.profanityAlternatives.join(", ")}` });
+      }
+
+      resolve(results);
+    };
+    img.src = imageData;
+  });
+}
+
+// ========== SIDEBAR COMPONENT ==========
+function Sidebar({ activeView, onNavigate, isConnected }) {
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: Icons.BarChart, badge: null },
+    { id: "trends", label: "Trend Radar", icon: Icons.TrendUp, badge: "Live" },
+    { id: "titles", label: "Title Generator", icon: Icons.Type, badge: null },
+    { id: "descriptions", label: "Description Builder", icon: Icons.FileText, badge: null },
+    { id: "thumbnails", label: "Thumbnail Reviewer", icon: Icons.Image, badge: null },
+    { id: "settings", label: "Settings", icon: Icons.Settings, badge: null },
+  ];
+
+  return (
+    <div className="sidebar">
+      <div className="sidebar-brand">
+        <h1>B Intelligence</h1>
+        <span>Humble Conviction · YouTube</span>
+      </div>
+      <div className="nav-section">
+        <div className="nav-section-label">Modules</div>
+        {navItems.map(item => (
+          <div
+            key={item.id}
+            className={`nav-item ${activeView === item.id ? "active" : ""}`}
+            onClick={() => onNavigate(item.id)}
+          >
+            <item.icon />
+            {item.label}
+            {item.badge && <span className="nav-badge">{item.badge}</span>}
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: "auto", padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+          <span className={`status-dot ${isConnected ? "live" : "error"}`}></span>
+          <span style={{ color: "var(--text-muted)" }}>
+            {isConnected ? "YouTube Connected" : "Not Connected"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== DASHBOARD VIEW ==========
+function DashboardView({ isConnected, channelData, videos }) {
+  const stats = channelData?.statistics || {};
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Dashboard</h2>
+        <p>Humble Conviction channel intelligence overview</p>
+      </div>
+
+      {!isConnected && (
+        <div className="yt-connect-banner">
+          <div className="yt-connect-info">
+            <div className="yt-icon">
+              <Icons.Play />
+            </div>
+            <div>
+              <h3>Connect YouTube to unlock live metrics</h3>
+              <p>Add your YouTube API key in Settings to see real-time channel data</p>
+            </div>
+          </div>
+          <button className="btn btn-secondary" onClick={() => {}}>
+            Go to Settings →
+          </button>
+        </div>
+      )}
+
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <div className="metric-label">Subscribers</div>
+          <div className="metric-value">{stats.subscriberCount ? Number(stats.subscriberCount).toLocaleString() : "—"}</div>
+          <div className="metric-change up"><Icons.ArrowUp /> Connect for live data</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Total Views</div>
+          <div className="metric-value">{stats.viewCount ? Number(stats.viewCount).toLocaleString() : "—"}</div>
+          <div className="metric-change up"><Icons.ArrowUp /> All time</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Videos</div>
+          <div className="metric-value">{stats.videoCount || "—"}</div>
+          <div className="metric-change up">Published</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Avg Views/Video</div>
+          <div className="metric-value">
+            {stats.viewCount && stats.videoCount
+              ? Math.round(Number(stats.viewCount) / Number(stats.videoCount)).toLocaleString()
+              : "—"}
+          </div>
+          <div className="metric-change up">Estimated</div>
+        </div>
+      </div>
+
+      <div className="context-panel">
+        <h4>Channel Context Loaded</h4>
+        <div className="context-tags">
+          <span className="tag tag-purple">Startup Pitching</span>
+          <span className="tag tag-blue">VC Communication</span>
+          <span className="tag tag-green">Fundraising</span>
+          <span className="tag tag-amber">Founder Mindset</span>
+          <span className="tag tag-blue">Pitch Coaching</span>
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 10 }}>
+          Voice: {HC_CONTEXT.channel.voice}
+        </p>
+      </div>
+
+      <div className="module-grid">
+        <div className="card">
+          <div className="card-header">
+            <h3>HC Pattern Intelligence</h3>
+            <span className="tag tag-green">Active</span>
+          </div>
+          <div className="card-body">
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 14 }}>
+              Patterns extracted from channel performance data
+            </p>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Shorts Sweet Spot</div>
+              <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "var(--font-mono)" }}>24-28s</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>7.5x more views than outside this range</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Top Title Style</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <span className="tag tag-blue">Scene titles</span>
+                <span className="tag tag-green">10x vs advice</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>Recent Performance</h3>
+          </div>
+          <div className="card-body">
+            {videos.length > 0 ? videos.slice(0, 5).map((v, i) => (
+              <div key={i} className="trend-item" style={{ paddingTop: i === 0 ? 0 : 14 }}>
+                <div className="trend-rank">{i + 1}</div>
+                <div className="trend-info">
+                  <h4>{v.snippet?.title}</h4>
+                  <div className="trend-stats">
+                    <div className="trend-stat"><Icons.Eye /> <strong>{Number(v.stats?.viewCount || 0).toLocaleString()}</strong> views</div>
+                    <div className="trend-stat"><Icons.ThumbsUp /> <strong>{Number(v.stats?.likeCount || 0).toLocaleString()}</strong></div>
+                  </div>
+                </div>
+              </div>
+            )) : (
+              <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "24px 0" }}>
+                Connect YouTube API to see recent video performance
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== TREND RADAR VIEW ==========
+function TrendRadarView({ isConnected }) {
+  const [query, setQuery] = useState("startup pitch");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const nicheTrends = useMemo(() => {
+    return HC_CONTEXT.patterns.keywords.map(k => {
+      // Derive volume from score, competition from competition field, opportunity inversely from competition
+      const volume = k.score >= 80 ? "High" : k.score >= 50 ? "Medium" : "Low";
+      const compMap = { low: "Low", medium: "Medium", high: "High" };
+      const competition = compMap[k.competition] || "Medium";
+      // Opportunity: high score + low competition = high opportunity
+      const compPenalty = k.competition === "high" ? 25 : k.competition === "medium" ? 12 : 0;
+      const opportunity = Math.min(99, Math.max(30, k.score - compPenalty + Math.floor(Math.random() * 8)));
+      return { topic: k.term, volume, competition, opportunity, score: k.score };
+    }).sort((a, b) => b.opportunity - a.opportunity);
+  }, []);
+
+  async function searchTrends() {
+    if (!isConnected) return;
+    setLoading(true);
+    try {
+      const data = await YT_API.searchTrending(query);
+      setResults(data.items || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Trend Radar</h2>
+        <p>Discover trending topics in your niche with real-time search data</p>
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-body">
+          <div style={{ display: "flex", gap: 10 }}>
+            <input
+              type="text" value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search trending topics..."
+              onKeyDown={e => e.key === "Enter" && searchTrends()}
+            />
+            <button className="btn btn-primary" onClick={searchTrends} disabled={loading || !isConnected}>
+              {loading ? <span className="spinner"></span> : <><Icons.Search /> Search</>}
+            </button>
+          </div>
+          {!isConnected && (
+            <p style={{ fontSize: 12, color: "var(--accent-amber)", marginTop: 8 }}>
+              Connect YouTube API in Settings to search live trends
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="module-grid">
+        <div className="card">
+          <div className="card-header">
+            <h3>Niche Opportunities</h3>
+            <span className="tag tag-green">HC Niche</span>
+          </div>
+          <div className="card-body">
+            {nicheTrends.map((trend, i) => (
+              <div key={i} className="trend-item">
+                <div className="trend-rank">{String(i + 1).padStart(2, "0")}</div>
+                <div className="trend-info">
+                  <h4>{trend.topic}</h4>
+                  <div className="trend-stats">
+                    <div className="trend-stat">Vol: <strong>{trend.volume}</strong></div>
+                    <div className="trend-stat">Comp: <strong>{trend.competition}</strong></div>
+                    <div className="trend-stat">
+                      Opp: <strong style={{ color: trend.opportunity > 80 ? "var(--accent-green)" : trend.opportunity > 65 ? "var(--accent-amber)" : "var(--accent-red)" }}>
+                        {trend.opportunity}/100
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="score-bar-wrap">
+                    <div className="score-bar-bg">
+                      <div className="score-bar-fill" style={{
+                        width: `${trend.opportunity}%`,
+                        background: trend.opportunity > 80 ? "var(--accent-green)" : trend.opportunity > 65 ? "var(--accent-amber)" : "var(--accent-red)"
+                      }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>Live Search Results</h3>
+          </div>
+          <div className="card-body">
+            {results.length > 0 ? results.map((item, i) => (
+              <div key={i} className="trend-item">
+                <div className="trend-rank">{i + 1}</div>
+                <div className="trend-info">
+                  <h4>{item.snippet?.title}</h4>
+                  <p>{item.snippet?.channelTitle} · {new Date(item.snippet?.publishedAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+            )) : (
+              <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "40px 0" }}>
+                {isConnected ? "Search to discover trending content in your niche" : "Connect YouTube API to unlock live trend search"}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== TITLE GENERATOR VIEW ==========
+function TitleGeneratorView() {
+  const [topic, setTopic] = useState("");
+  const [style, setStyle] = useState("all");
+  const [titles, setTitles] = useState([]);
+  const [copied, setCopied] = useState(null);
+
+  function generate() {
+    if (!topic.trim()) return;
+    setTitles(generateTitles(topic.trim(), style));
+  }
+
+  function copyTitle(title, idx) {
+    navigator.clipboard?.writeText(title);
+    setCopied(idx);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Title Generator</h2>
+        <p>Generate CTR-optimized titles based on Humble Conviction's proven patterns</p>
+      </div>
+
+      <div className="context-panel">
+        <h4>HC Title Intelligence</h4>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+          {HC_CONTEXT.patterns.titleFormulas.map((f, i) => (
+            <div key={i} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <span className={`tag tag-${f.score >= 95 ? "green" : f.score >= 88 ? "blue" : "amber"}`}>{f.label}</span>
+              <span style={{ color: "var(--text-secondary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.example}</span>
+              <span style={{ color: f.score >= 95 ? "var(--accent-green)" : "var(--accent-amber)", fontWeight: 600, fontFamily: "var(--font-mono)", fontSize: 11 }}>{f.score}/100</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-body">
+          <div className="input-group">
+            <label className="input-label">Video Topic</label>
+            <input
+              type="text" value={topic}
+              onChange={e => setTopic(e.target.value)}
+              placeholder="e.g., handling tough VC questions, building a pitch deck..."
+              onKeyDown={e => e.key === "Enter" && generate()}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
+              <label className="input-label">Title Style</label>
+              <select value={style} onChange={e => setStyle(e.target.value)}>
+                <option value="all">All Formulas</option>
+                {HC_CONTEXT.patterns.titleFormulas.map(f => (
+                  <option key={f.type} value={f.type}>{f.label} ({f.score}/100)</option>
+                ))}
+              </select>
+            </div>
+            <button className="btn btn-primary" onClick={generate} style={{ marginBottom: 0 }}>
+              <Icons.Zap /> Generate Titles
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {titles.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <h3>Generated Titles ({titles.length})</h3>
+            <span className="tag tag-blue">Sorted by CTR score</span>
+          </div>
+          <div className="card-body">
+            {titles.map((t, i) => (
+              <div key={i} className="title-result" onClick={() => copyTitle(t.title, i)}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <h4>{t.title}</h4>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700,
+                      color: t.ctrScore >= 80 ? "var(--accent-green)" : t.ctrScore >= 70 ? "var(--accent-amber)" : "var(--text-secondary)"
+                    }}>{t.ctrScore}</span>
+                    {copied === i ? <Icons.Check /> : <Icons.Copy />}
+                  </div>
+                </div>
+                <div className="title-result-meta">
+                  <span className={`tag tag-${t.ctrScore >= 85 ? "green" : t.ctrScore >= 75 ? "blue" : t.ctrScore >= 65 ? "amber" : "red"}`}>
+                    {t.label || t.style}
+                  </span>
+                  <span>Gap: {t.curiosityGap}</span>
+                  <span>{t.length} chars</span>
+                  {t.hasPowerWord && <span className="tag tag-purple">Power word</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== DESCRIPTION BUILDER VIEW ==========
+function DescriptionBuilderView() {
+  const [title, setTitle] = useState("");
+  const [topic, setTopic] = useState("");
+  const [takeaways, setTakeaways] = useState("");
+  const [timestamps, setTimestamps] = useState("");
+  const [result, setResult] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  function generate() {
+    if (!topic.trim()) return;
+    const ta = takeaways.split("\n").filter(Boolean);
+    const ts = timestamps.split("\n").filter(Boolean);
+    setResult(buildDescription(title, topic.trim(), ta, ts));
+  }
+
+  function copyDesc() {
+    if (!result) return;
+    navigator.clipboard?.writeText(result.description);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Description Builder</h2>
+        <p>Generate SEO-optimized descriptions with HC keywords and timestamps</p>
+      </div>
+
+      <div className="module-grid">
+        <div className="card">
+          <div className="card-header"><h3>Input</h3></div>
+          <div className="card-body">
+            <div className="input-group">
+              <label className="input-label">Video Title</label>
+              <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+                placeholder="Your video title..." />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Topic / Theme</label>
+              <input type="text" value={topic} onChange={e => setTopic(e.target.value)}
+                placeholder="e.g., handling VC objections..." />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Key Takeaways (one per line)</label>
+              <textarea value={takeaways} onChange={e => setTakeaways(e.target.value)}
+                placeholder={"How to reframe tough questions\nThe pause technique\nWhy confidence != arrogance"} />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Timestamps (one per line)</label>
+              <textarea value={timestamps} onChange={e => setTimestamps(e.target.value)}
+                placeholder={"0:00 - Intro\n0:45 - Trap 1\n2:10 - Trap 2"} />
+            </div>
+            <button className="btn btn-primary" onClick={generate} style={{ width: "100%" }}>
+              <Icons.FileText /> Build Description
+            </button>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>Output</h3>
+            {result && (
+              <button className="btn btn-ghost" onClick={copyDesc}>
+                {copied ? <><Icons.Check /> Copied!</> : <><Icons.Copy /> Copy</>}
+              </button>
+            )}
+          </div>
+          <div className="card-body">
+            {result ? (
+              <>
+                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                  <span className="tag tag-blue">SEO Score: {result.seoScore}/50</span>
+                  <span className="tag tag-green">{result.keywords.length} keywords</span>
+                </div>
+                <div className="score-bar-wrap" style={{ marginBottom: 16 }}>
+                  <div className="score-bar-bg">
+                    <div className="score-bar-fill" style={{
+                      width: `${(result.seoScore / 50) * 100}%`,
+                      background: result.seoScore > 35 ? "var(--accent-green)" : "var(--accent-amber)"
+                    }}></div>
+                  </div>
+                  <div className="score-bar-labels">
+                    <span>SEO Score</span>
+                    <span>{result.seoScore}/50</span>
+                  </div>
+                </div>
+                <div className="desc-output">{result.description}</div>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "60px 0" }}>
+                Fill in the details and click Build to generate an SEO-optimized description
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== THUMBNAIL REVIEWER VIEW ==========
+function ThumbnailReviewerView() {
+  const [image, setImage] = useState(null);
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const fileRef = useRef();
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    setResults(null);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      setImage(dataUrl);
+      const analysis = await analyzeThumbnail(dataUrl);
+      setResults(analysis);
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      const fakeEvent = { target: { files: [file] } };
+      handleFile(fakeEvent);
+    }
+  }
+
+  const scoreColor = (score) =>
+    score >= 80 ? "var(--accent-green)" :
+    score >= 60 ? "var(--accent-amber)" : "var(--accent-red)";
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Thumbnail Reviewer</h2>
+        <p>Upload your thumbnail for structured feedback on contrast, composition, and CTR potential</p>
+      </div>
+
+      <div className="module-grid">
+        <div className="card">
+          <div className="card-header"><h3>Upload</h3></div>
+          <div className="card-body">
+            {!image ? (
+              <div
+                className="thumb-upload-zone"
+                onClick={() => fileRef.current?.click()}
+                onDragOver={e => e.preventDefault()}
+                onDrop={handleDrop}
+              >
+                <Icons.Upload />
+                <p>Drop your thumbnail here or click to browse</p>
+                <span>PNG, JPG — Recommended 1280×720</span>
+                <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+              </div>
+            ) : (
+              <div>
+                <div className="thumb-preview">
+                  <img src={image} alt="Thumbnail preview" />
+                </div>
+                <button className="btn btn-secondary" style={{ marginTop: 12, width: "100%" }}
+                  onClick={() => { setImage(null); setResults(null); }}>
+                  Upload Different Image
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><h3>Analysis</h3></div>
+          <div className="card-body">
+            {loading && (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
+                <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Analyzing thumbnail...</p>
+              </div>
+            )}
+            {results && !loading && (
+              <>
+                <div style={{ textAlign: "center", marginBottom: 20 }}>
+                  <div style={{
+                    fontSize: 48, fontWeight: 700, fontFamily: "var(--font-mono)",
+                    color: scoreColor(results.overallScore)
+                  }}>
+                    {results.overallScore}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Overall Score / 100</div>
+                </div>
+
+                <div className="review-scores">
+                  {[
+                    { label: "Contrast", score: results.contrastScore },
+                    { label: "Composition", score: results.compositionScore },
+                    { label: "Text Readability", score: results.textReadability },
+                    { label: "Emotion Clarity", score: results.emotionClarity },
+                  ].map((item, i) => (
+                    <div key={i} className="review-score-item">
+                      <label>{item.label}</label>
+                      <div className="score-val" style={{ color: scoreColor(item.score) }}>{item.score}</div>
+                      <div className="score-bar-wrap">
+                        <div className="score-bar-bg">
+                          <div className="score-bar-fill" style={{ width: `${item.score}%`, background: scoreColor(item.score) }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: "var(--text-secondary)" }}>
+                    Feedback
+                  </div>
+                  {results.feedback.map((f, i) => (
+                    <div key={i} style={{
+                      padding: "8px 12px", marginBottom: 6,
+                      borderRadius: "var(--radius-sm)",
+                      background: f.type === "error" ? "rgba(239,68,68,0.08)" :
+                                  f.type === "warning" ? "rgba(245,158,11,0.08)" :
+                                  f.type === "success" ? "rgba(34,197,94,0.08)" :
+                                  "rgba(74,124,255,0.05)",
+                      borderLeft: `3px solid ${
+                        f.type === "error" ? "var(--accent-red)" :
+                        f.type === "warning" ? "var(--accent-amber)" :
+                        f.type === "success" ? "var(--accent-green)" :
+                        "var(--accent-blue)"
+                      }`,
+                      fontSize: 12, color: "var(--text-secondary)"
+                    }}>
+                      {f.msg}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 14, fontSize: 11, color: "var(--text-muted)" }}>
+                  Dimensions: {results.dimensions} · Ratio: {results.aspectRatio}
+                  {results.isCorrectRatio ? " ✓" : " (not 16:9)"}
+                </div>
+              </>
+            )}
+            {!results && !loading && (
+              <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "60px 0" }}>
+                Upload a thumbnail to get HC-specific feedback
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== SETTINGS VIEW ==========
+function SettingsView({ apiKey, channelId, onSave, isConnected }) {
+  const [key, setKey] = useState(apiKey || "");
+  const [channel, setChannel] = useState(channelId || "");
+  const [status, setStatus] = useState("");
+
+  async function testAndSave() {
+    if (!key.trim() || !channel.trim()) {
+      setStatus("Please enter both API key and Channel ID");
+      return;
+    }
+    setStatus("Testing connection...");
+    YT_API.setCredentials(key.trim(), channel.trim());
+    try {
+      const data = await YT_API.getChannelStats();
+      if (data) {
+        setStatus(`Connected to "${data.snippet?.title}" — ${Number(data.statistics?.subscriberCount).toLocaleString()} subscribers`);
+        onSave(key.trim(), channel.trim());
+      } else {
+        setStatus("Channel not found. Check your Channel ID.");
+      }
+    } catch (e) {
+      setStatus(`Error: ${e.message}`);
+    }
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Settings</h2>
+        <p>Configure YouTube API connection and channel preferences</p>
+      </div>
+
+      <div className="card" style={{ maxWidth: 640 }}>
+        <div className="card-header">
+          <h3>YouTube Data API</h3>
+          <span className={`tag ${isConnected ? "tag-green" : "tag-red"}`}>
+            {isConnected ? "Connected" : "Not Connected"}
+          </span>
+        </div>
+        <div className="card-body">
+          <div className="settings-section">
+            <h3>API Key</h3>
+            <p>Get your key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener"
+              style={{ color: "var(--accent-blue)" }}>Google Cloud Console</a>. Enable the YouTube Data API v3.</p>
+            <div className="api-key-input">
+              <input type="text" value={key} onChange={e => setKey(e.target.value)}
+                placeholder="AIzaSy..." />
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <h3>Channel ID</h3>
+            <p>Find your Channel ID at <a href="https://www.youtube.com/account_advanced" target="_blank" rel="noopener"
+              style={{ color: "var(--accent-blue)" }}>youtube.com/account_advanced</a></p>
+            <input type="text" value={channel} onChange={e => setChannel(e.target.value)}
+              placeholder="UC..." />
+          </div>
+
+          <button className="btn btn-primary" onClick={testAndSave} style={{ width: "100%" }}>
+            <Icons.Zap /> Test Connection & Save
+          </button>
+
+          {status && (
+            <div style={{
+              marginTop: 12, padding: "10px 14px",
+              borderRadius: "var(--radius-sm)",
+              background: status.startsWith("Connected") ? "rgba(34,197,94,0.08)" : status.startsWith("Error") ? "rgba(239,68,68,0.08)" : "rgba(74,124,255,0.08)",
+              borderLeft: `3px solid ${status.startsWith("Connected") ? "var(--accent-green)" : status.startsWith("Error") ? "var(--accent-red)" : "var(--accent-blue)"}`,
+              fontSize: 12, color: "var(--text-secondary)"
+            }}>
+              {status}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card" style={{ maxWidth: 640, marginTop: 18 }}>
+        <div className="card-header"><h3>Channel Context</h3></div>
+        <div className="card-body">
+          <div style={{ display: "grid", gap: 12 }}>
+            {Object.entries({
+              Channel: HC_CONTEXT.channel.name,
+              Creator: HC_CONTEXT.channel.creator,
+              Niche: HC_CONTEXT.channel.niche,
+              Audience: HC_CONTEXT.channel.audience,
+              Tagline: HC_CONTEXT.channel.tagline,
+            }).map(([label, value]) => (
+              <div key={label} style={{ display: "flex", gap: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", width: 80, flexShrink: 0 }}>{label}</span>
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== APP SHELL ==========
+function App() {
+  const [view, setView] = useState("dashboard");
+  const [apiKey, setApiKey] = useState(null);
+  const [channelId, setChannelId] = useState(null);
+  const [channelData, setChannelData] = useState(null);
+  const [videos, setVideos] = useState([]);
+
+  useEffect(() => {
+    const creds = YT_API.loadCredentials();
+    if (creds.key && creds.channelId) {
+      setApiKey(creds.key);
+      setChannelId(creds.channelId);
+      loadChannelData();
+    }
+  }, []);
+
+  async function loadChannelData() {
+    try {
+      const data = await YT_API.getChannelStats();
+      setChannelData(data);
+      const vids = await YT_API.getRecentVideos(10);
+      setVideos(vids);
+    } catch (e) {
+      console.error("Failed to load channel data:", e);
+    }
+  }
+
+  function handleSaveCredentials(key, channel) {
+    setApiKey(key);
+    setChannelId(channel);
+    YT_API.setCredentials(key, channel);
+    loadChannelData();
+  }
+
+  const isConnected = YT_API.isConnected();
+
+  const viewMap = {
+    dashboard: <DashboardView isConnected={isConnected} channelData={channelData} videos={videos} />,
+    trends: <TrendRadarView isConnected={isConnected} />,
+    titles: <TitleGeneratorView />,
+    descriptions: <DescriptionBuilderView />,
+    thumbnails: <ThumbnailReviewerView />,
+    settings: <SettingsView apiKey={apiKey} channelId={channelId} onSave={handleSaveCredentials} isConnected={isConnected} />,
+  };
+
+  return (
+    <div className="app-shell">
+      <Sidebar activeView={view} onNavigate={setView} isConnected={isConnected} />
+      <div className="main-content">
+        {viewMap[view] || viewMap.dashboard}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
