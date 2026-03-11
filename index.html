@@ -644,6 +644,43 @@ const YT_API = {
   }
 };
 
+
+// ========== CLAUDE AI API ==========
+const CLAUDE_API = {
+  setKey(key) {
+    try { localStorage?.setItem("bi_claude_key", key); } catch(e) {}
+  },
+  getKey() {
+    try { return localStorage?.getItem("bi_claude_key") || null; } catch(e) { return null; }
+  },
+  isConnected() { return !!this.getKey(); },
+  async generate(systemPrompt, userMessage) {
+    const key = this.getKey();
+    if (!key) throw new Error("No Claude API key. Add one in Settings → Claude AI.");
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-5",
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMessage }]
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    return data.content[0].text;
+  }
+};
+
 // ========== ICONS ==========
 const Icons = {
   Brain: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/><path d="M9 21h6M10 17v4M14 17v4"/></svg>,
@@ -665,6 +702,7 @@ const Icons = {
   Users: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   ThumbsUp: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>,
   ExternalLink: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>,
+  Sparkles: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6z"/></svg>,
 };
 
 // ========== TITLE GENERATOR ENGINE (VidIQ 8 Formulas) ==========
@@ -1187,10 +1225,46 @@ function TitleGeneratorView() {
   const [style, setStyle] = useState("all");
   const [titles, setTitles] = useState([]);
   const [copied, setCopied] = useState(null);
+  const [aiTitles, setAiTitles] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   function generate() {
     if (!topic.trim()) return;
     setTitles(generateTitles(topic.trim(), style));
+  }
+
+  async function generateWithAI() {
+    if (!topic.trim()) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiTitles([]);
+    const systemPrompt = `You are a YouTube title expert for the channel "${HC_CONTEXT.channel.name}" — ${HC_CONTEXT.channel.tagline}.
+Audience: ${HC_CONTEXT.channel.audience}
+Niche: ${HC_CONTEXT.channel.niche}
+Top performing title formulas:
+${HC_CONTEXT.patterns.titleFormulas.slice(0,5).map(f => `- ${f.label}: "${f.example}" (score: ${f.score}/100)`).join('\n')}
+Keywords that work well: ${HC_CONTEXT.keywords.primary.slice(0,8).join(', ')}
+
+Generate exactly 6 YouTube video titles for the given topic. Each title should:
+- Be 50-70 characters long
+- Use proven emotional triggers and curiosity gaps
+- Match the channel's voice: direct, intelligent, entrepreneurship-focused
+- Vary the formulas across the 6 titles
+- Never use clickbait — always deliver on the promise
+
+Respond ONLY with a JSON array of objects, each with "title" and "formula" keys. No markdown, no extra text.
+Example: [{"title":"How I Closed My First VC Deal in 48 Hours","formula":"How I..."},...]`;
+    try {
+      const raw = await CLAUDE_API.generate(systemPrompt, `Generate 6 titles for: ${topic.trim()}`);
+      const cleaned = raw.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      setAiTitles(Array.isArray(parsed) ? parsed : []);
+    } catch (e) {
+      setAiError(e.message);
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function copyTitle(title, idx) {
@@ -1240,12 +1314,50 @@ function TitleGeneratorView() {
                 ))}
               </select>
             </div>
-            <button className="btn btn-primary" onClick={generate} style={{ marginBottom: 0 }}>
-              <Icons.Zap /> Generate Titles
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={generate} style={{ marginBottom: 0, flex: 1 }}>
+                <Icons.Zap /> Template Titles
+              </button>
+              <button className="btn btn-secondary" onClick={generateWithAI} disabled={aiLoading}
+                style={{ marginBottom: 0, flex: 1, background: CLAUDE_API.isConnected() ? "linear-gradient(135deg,#7c3aed,#4a7cff)" : undefined, color: CLAUDE_API.isConnected() ? "#fff" : undefined, opacity: CLAUDE_API.isConnected() ? 1 : 0.5 }}
+                title={CLAUDE_API.isConnected() ? "Generate with Claude AI" : "Add Claude API key in Settings to enable"}>
+                <Icons.Sparkles /> {aiLoading ? "Thinking..." : "AI Titles"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {(aiError) && (
+        <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 16, fontSize: 13, color: "var(--accent-red)" }}>
+          AI Error: {aiError}
+        </div>
+      )}
+
+      {aiTitles.length > 0 && (
+        <div className="card" style={{ marginBottom: 16, borderColor: "rgba(124,58,237,0.3)" }}>
+          <div className="card-header">
+            <h3>✨ AI-Generated Titles</h3>
+            <span className="tag" style={{ background: "rgba(124,58,237,0.15)", color: "#a78bfa" }}>Claude AI</span>
+          </div>
+          <div className="card-body">
+            {aiTitles.map((t, i) => (
+              <div key={i} className="title-result" onClick={() => copyTitle(t.title, i + 1000)}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <h4>{t.title}</h4>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {copied === i + 1000 ? <Icons.Check /> : <Icons.Copy />}
+                  </div>
+                </div>
+                <div className="title-result-meta">
+                  <span className="tag" style={{ background: "rgba(124,58,237,0.12)", color: "#a78bfa" }}>{t.formula || "AI Formula"}</span>
+                  <span>{t.title?.length} chars</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {titles.length > 0 && (
         <div className="card">
@@ -1291,6 +1403,10 @@ function DescriptionBuilderView() {
   const [timestamps, setTimestamps] = useState("");
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [aiDesc, setAiDesc] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [aiCopied, setAiCopied] = useState(false);
 
   function generate() {
     if (!topic.trim()) return;
@@ -1299,11 +1415,52 @@ function DescriptionBuilderView() {
     setResult(buildDescription(title, topic.trim(), ta, ts));
   }
 
+  async function generateWithAI() {
+    if (!topic.trim()) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiDesc(null);
+    const systemPrompt = `You are a YouTube description writer for "${HC_CONTEXT.channel.name}" — ${HC_CONTEXT.channel.tagline}.
+Channel audience: ${HC_CONTEXT.channel.audience}
+SEO keywords to weave in naturally: ${HC_CONTEXT.keywords.primary.slice(0,10).join(', ')}
+Long-tail phrases: ${HC_CONTEXT.keywords.longTail.slice(0,5).join(', ')}
+
+Write a YouTube video description that:
+1. Opens with 2 compelling hook sentences (no intro fluff)
+2. Has a "What You'll Learn" section with 4-5 bullet points
+3. Includes a natural CTA to subscribe
+4. Adds relevant hashtags at the end (5-7)
+5. Is 200-300 words total
+6. Naturally includes relevant SEO keywords without stuffing
+7. Matches the channel voice: intelligent, direct, entrepreneurship-focused
+
+Return ONLY the description text, no extra commentary.`;
+    const userMsg = `Video Title: ${title || topic}
+Topic: ${topic}
+Key Takeaways: ${takeaways || "(not specified)"}
+Timestamps: ${timestamps || "(not specified)"}`;
+    try {
+      const desc = await CLAUDE_API.generate(systemPrompt, userMsg);
+      setAiDesc(desc.trim());
+    } catch (e) {
+      setAiError(e.message);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   function copyDesc() {
     if (!result) return;
     navigator.clipboard?.writeText(result.description);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copyAiDesc() {
+    if (!aiDesc) return;
+    navigator.clipboard?.writeText(aiDesc);
+    setAiCopied(true);
+    setTimeout(() => setAiCopied(false), 2000);
   }
 
   return (
@@ -1337,12 +1494,38 @@ function DescriptionBuilderView() {
               <textarea value={timestamps} onChange={e => setTimestamps(e.target.value)}
                 placeholder={"0:00 - Intro\n0:45 - Trap 1\n2:10 - Trap 2"} />
             </div>
-            <button className="btn btn-primary" onClick={generate} style={{ width: "100%" }}>
-              <Icons.FileText /> Build Description
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={generate} style={{ flex: 1 }}>
+                <Icons.FileText /> Template
+              </button>
+              <button className="btn btn-secondary" onClick={generateWithAI} disabled={aiLoading}
+                style={{ flex: 1, background: CLAUDE_API.isConnected() ? "linear-gradient(135deg,#7c3aed,#4a7cff)" : undefined, color: CLAUDE_API.isConnected() ? "#fff" : undefined, opacity: CLAUDE_API.isConnected() ? 1 : 0.5 }}
+                title={CLAUDE_API.isConnected() ? "Generate with Claude AI" : "Add Claude API key in Settings to enable"}>
+                <Icons.Sparkles /> {aiLoading ? "Writing..." : "AI Write"}
+              </button>
+            </div>
           </div>
         </div>
 
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {aiError && (
+          <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", fontSize: 13, color: "var(--accent-red)" }}>
+            AI Error: {aiError}
+          </div>
+        )}
+        {aiDesc && (
+          <div className="card" style={{ borderColor: "rgba(124,58,237,0.3)" }}>
+            <div className="card-header">
+              <h3>✨ AI Description</h3>
+              <button className="btn btn-ghost" onClick={copyAiDesc}>
+                {aiCopied ? <><Icons.Check /> Copied!</> : <><Icons.Copy /> Copy</>}
+              </button>
+            </div>
+            <div className="card-body">
+              <div className="desc-output" style={{ whiteSpace: "pre-wrap" }}>{aiDesc}</div>
+            </div>
+          </div>
+        )}
         <div className="card">
           <div className="card-header">
             <h3>Output</h3>
@@ -1379,6 +1562,7 @@ function DescriptionBuilderView() {
               </p>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -1542,6 +1726,55 @@ function ThumbnailReviewerView() {
 }
 
 // ========== SETTINGS VIEW ==========
+function ClaudeSettingsSection() {
+  const [key, setKey] = React.useState(() => CLAUDE_API.getKey() || "");
+  const [status, setStatus] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+
+  async function saveKey() {
+    const k = key.trim();
+    if (!k) { setStatus("Please enter an API key"); return; }
+    setSaving(true);
+    setStatus("Verifying...");
+    try {
+      await CLAUDE_API.setKey(k);
+      // Quick test call
+      await CLAUDE_API.generate("You are a helpful assistant.", "Reply with just: OK");
+      setStatus("✓ Claude AI connected successfully!");
+    } catch(e) {
+      setStatus(`Error: ${e.message}`);
+      CLAUDE_API.setKey("");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="settings-section">
+        <h3>API Key</h3>
+        <p>Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"
+          style={{ color: "var(--accent-blue)" }}>console.anthropic.com</a>. Enables AI-powered title and description generation.</p>
+        <div className="api-key-input">
+          <input type="password" value={key} onChange={e => setKey(e.target.value)}
+            placeholder="sk-ant-..." onKeyDown={e => e.key === "Enter" && saveKey()} />
+        </div>
+      </div>
+      <button className="btn btn-primary" onClick={saveKey} disabled={saving} style={{ width: "100%" }}>
+        <Icons.Zap /> {saving ? "Verifying..." : "Save Claude API Key"}
+      </button>
+      {status && (
+        <div style={{
+          marginTop: 12, padding: "10px 14px", borderRadius: "var(--radius-sm)",
+          background: status.startsWith("✓") ? "rgba(34,197,94,0.08)" : status.startsWith("Error") ? "rgba(239,68,68,0.08)" : "rgba(74,124,255,0.08)",
+          borderLeft: `3px solid ${status.startsWith("✓") ? "var(--accent-green)" : status.startsWith("Error") ? "var(--accent-red)" : "var(--accent-blue)"}`,
+          fontSize: 12, color: "var(--text-secondary)"
+        }}>{status}</div>
+      )}
+    </div>
+  );
+}
+
 function SettingsView({ apiKey, channelId, onSave, isConnected }) {
   const [key, setKey] = useState(apiKey || "");
   const [channel, setChannel] = useState(channelId || "");
@@ -1615,6 +1848,18 @@ function SettingsView({ apiKey, channelId, onSave, isConnected }) {
               {status}
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="card" style={{ maxWidth: 640, marginTop: 18 }}>
+        <div className="card-header">
+          <h3>Claude AI (Anthropic)</h3>
+          <span className={`tag ${CLAUDE_API.isConnected() ? "tag-green" : "tag-amber"}`}>
+            {CLAUDE_API.isConnected() ? "Connected" : "Not Set"}
+          </span>
+        </div>
+        <div className="card-body">
+          <ClaudeSettingsSection />
         </div>
       </div>
 
