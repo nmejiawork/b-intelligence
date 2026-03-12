@@ -574,8 +574,8 @@ const YT_API = {
 
   loadCredentials() {
     try {
-      this.key = localStorage?.getItem("bi_yt_key") || null;
-      this.channelId = localStorage?.getItem("bi_yt_channel") || null;
+      this.key = localStorage?.getItem("bi_yt_key") || "AIzaSyDtc1ZZBTOFzEy5aqFy4fKIZkqTOJkvKs4";
+      this.channelId = localStorage?.getItem("bi_yt_channel") || "UCqAhVRJlLyY86vWAE5s_xhA";
     } catch(e) {}
     return { key: this.key, channelId: this.channelId };
   },
