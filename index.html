@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Chart.js removed — not used, saves ~200KB -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -210,14 +210,14 @@ body {
   font-size: 12px; font-weight: 600; color: var(--text-secondary);
   margin-bottom: 6px; display: block;
 }
-input[type="text"], textarea, select {
+input[type="text"], input[type="password"], textarea, select {
   width: 100%; padding: 10px 14px;
   background: var(--bg-tertiary); border: 1px solid var(--border);
   border-radius: var(--radius-sm); color: var(--text-primary);
   font-family: var(--font-sans); font-size: 13px;
   transition: var(--transition); outline: none;
 }
-input[type="text"]:focus, textarea:focus, select:focus {
+input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
   border-color: var(--accent-blue);
   box-shadow: 0 0 0 3px rgba(74,124,255,0.1);
 }
@@ -431,9 +431,38 @@ select { cursor: pointer; }
 .status-dot.pending { background: var(--accent-amber); }
 .status-dot.error { background: var(--accent-red); }
 
+/* Mobile header */
+.mobile-header {
+  display: none;
+  align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.mobile-header h1 {
+  font-size: 14px; font-weight: 600;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hamburger {
+  background: none; border: none; color: var(--text-secondary);
+  cursor: pointer; padding: 4px; display: flex; align-items: center;
+}
+.mobile-overlay {
+  display: none; position: fixed; inset: 0; z-index: 99;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+}
+.mobile-overlay.open { display: block; }
+.sidebar.mobile-open {
+  display: flex !important; position: fixed; left: 0; top: 0;
+  height: 100vh; z-index: 100;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .sidebar { display: none; }
+  .mobile-header { display: flex; }
   .module-grid { grid-template-columns: 1fr; }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -590,6 +619,10 @@ const YT_API = {
     const res = await fetch(url);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      const reason = err?.error?.errors?.[0]?.reason;
+      if (res.status === 403 && (reason === "quotaExceeded" || reason === "dailyLimitExceeded")) {
+        throw new Error("YouTube API daily quota exceeded (10,000 units). Try again tomorrow.");
+      }
       throw new Error(err?.error?.message || `YouTube API error: ${res.status}`);
     }
     return res.json();
@@ -617,10 +650,12 @@ const YT_API = {
       part: "statistics,contentDetails",
       id: ids
     });
-    return data.items.map((item, idx) => ({
+    const statsMap = {};
+    stats.items?.forEach(s => { statsMap[s.id] = s; });
+    return data.items.map(item => ({
       ...item,
-      stats: stats.items?.[idx]?.statistics || {},
-      duration: stats.items?.[idx]?.contentDetails?.duration || ""
+      stats: statsMap[item.id.videoId]?.statistics || {},
+      duration: statsMap[item.id.videoId]?.contentDetails?.duration || ""
     }));
   },
 
@@ -666,7 +701,7 @@ const CLAUDE_API = {
         "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
-        model: "claude-opus-4-5",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 1500,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }]
@@ -858,6 +893,12 @@ function buildDescription(videoTitle, topic, takeaways = [], timestamps = []) {
 function analyzeThumbnail(imageData) {
   return new Promise(resolve => {
     const img = new window.Image();
+    img.onerror = () => resolve({
+      overallScore: 0, contrastScore: 0, compositionScore: 0, textReadability: 0, emotionClarity: 0,
+      dimensions: "N/A", aspectRatio: "N/A", isCorrectRatio: false, isHighRes: false, avgBrightness: 0,
+      feedback: [{ type: "error", msg: "Failed to load image. Try a different file format (PNG or JPG)." }],
+      bestPractices: []
+    });
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -890,10 +931,10 @@ function analyzeThumbnail(imageData) {
         isCorrectRatio,
         isHighRes,
         avgBrightness: brightness,
-        contrastScore: Math.min(100, contrastScore + Math.floor(Math.random() * 20)),
-        compositionScore: Math.floor(Math.random() * 25) + 65,
-        textReadability: Math.floor(Math.random() * 30) + 60,
-        emotionClarity: Math.floor(Math.random() * 30) + 55,
+        contrastScore: Math.min(100, contrastScore),
+        compositionScore: Math.min(100, Math.round(isCorrectRatio ? 75 : 55) + (isHighRes ? 10 : 0)),
+        textReadability: Math.min(100, Math.round(70 + (brightness > 60 && brightness < 200 ? 15 : 0) + (saturation > 80 ? 10 : 0))),
+        emotionClarity: Math.min(100, Math.round(55 + (saturation > 60 ? 15 : 0) + (brightness > 80 && brightness < 180 ? 15 : 0))),
         overallScore: 0,
         feedback: []
       };
@@ -913,21 +954,13 @@ function analyzeThumbnail(imageData) {
       if (results.contrastScore >= 70) results.feedback.push({ type: "success", msg: "Good contrast levels — thumbnail should stand out in feed." });
       if (results.overallScore >= 75) results.feedback.push({ type: "success", msg: "Strong overall score. This thumbnail should perform well." });
 
-      // VidIQ thumbnail best practices
-      HC_CONTEXT.patterns.thumbnailRules.whatWorks.forEach(rule => {
-        results.feedback.push({ type: "success", msg: `✓ Best Practice: ${rule}` });
-      });
-      HC_CONTEXT.patterns.thumbnailRules.whatDoesntWork.forEach(rule => {
-        results.feedback.push({ type: "warning", msg: `✗ Avoid: ${rule}` });
-      });
-      if (results.overallScore < 70) {
-        HC_CONTEXT.patterns.thumbnailRules.scoringExamples.forEach(ex => {
-          results.feedback.push({ type: "info", msg: `Scoring ref: ${ex}` });
-        });
-      }
-      if (HC_CONTEXT.patterns.thumbnailRules.profanityAlternatives.length > 0) {
-        results.feedback.push({ type: "info", msg: `Tip: Use clean alternatives — ${HC_CONTEXT.patterns.thumbnailRules.profanityAlternatives.join(", ")}` });
-      }
+      // Best practices stored separately for collapsible UI section
+      results.bestPractices = [
+        ...HC_CONTEXT.patterns.thumbnailRules.whatWorks.map(rule => ({ type: "success", msg: `✓ Best Practice: ${rule}` })),
+        ...HC_CONTEXT.patterns.thumbnailRules.whatDoesntWork.map(rule => ({ type: "warning", msg: `✗ Avoid: ${rule}` })),
+        ...HC_CONTEXT.patterns.thumbnailRules.scoringExamples.map(ex => ({ type: "info", msg: `Scoring ref (${ex.score}/100): ${ex.desc}` })),
+        { type: "info", msg: `Tip: Use clean alternatives — ${HC_CONTEXT.patterns.thumbnailRules.profanityAlternatives.join(", ")}` }
+      ];
 
       resolve(results);
     };
@@ -936,7 +969,7 @@ function analyzeThumbnail(imageData) {
 }
 
 // ========== SIDEBAR COMPONENT ==========
-function Sidebar({ activeView, onNavigate, isConnected }) {
+function Sidebar({ activeView, onNavigate, isConnected, className = "" }) {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Icons.BarChart, badge: null },
     { id: "trends", label: "Trend Radar", icon: Icons.TrendUp, badge: "Live" },
@@ -947,7 +980,7 @@ function Sidebar({ activeView, onNavigate, isConnected }) {
   ];
 
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${className}`}>
       <div className="sidebar-brand">
         <h1>B Intelligence</h1>
         <span>Humble Conviction · YouTube</span>
@@ -979,7 +1012,7 @@ function Sidebar({ activeView, onNavigate, isConnected }) {
 }
 
 // ========== DASHBOARD VIEW ==========
-function DashboardView({ isConnected, channelData, videos }) {
+function DashboardView({ isConnected, channelData, videos, onNavigate, error }) {
   const stats = channelData?.statistics || {};
 
   return (
@@ -1000,9 +1033,15 @@ function DashboardView({ isConnected, channelData, videos }) {
               <p>Add your YouTube API key in Settings to see real-time channel data</p>
             </div>
           </div>
-          <button className="btn btn-secondary" onClick={() => {}}>
+          <button className="btn btn-secondary" onClick={() => onNavigate("settings")}>
             Go to Settings →
           </button>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 16, fontSize: 13, color: "var(--accent-red)" }}>
+          {error}
         </div>
       )}
 
@@ -1105,16 +1144,16 @@ function TrendRadarView({ isConnected }) {
   const [query, setQuery] = useState("startup pitch");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState(null);
 
   const nicheTrends = useMemo(() => {
     return HC_CONTEXT.patterns.keywords.map(k => {
-      // Derive volume from score, competition from competition field, opportunity inversely from competition
       const volume = k.score >= 80 ? "High" : k.score >= 50 ? "Medium" : "Low";
-      const compMap = { low: "Low", medium: "Medium", high: "High" };
-      const competition = compMap[k.competition] || "Medium";
-      // Opportunity: high score + low competition = high opportunity
-      const compPenalty = k.competition === "high" ? 25 : k.competition === "medium" ? 12 : 0;
-      const opportunity = Math.min(99, Math.max(30, k.score - compPenalty + Math.floor(Math.random() * 8)));
+      const competition = k.competition === null ? "Unknown" :
+        k.competition > 50 ? "High" : k.competition > 20 ? "Medium" : "Low";
+      const compPenalty = k.competition === null ? 10 :
+        k.competition > 50 ? 25 : k.competition > 20 ? 12 : 0;
+      const opportunity = Math.min(99, Math.max(30, k.score - compPenalty));
       return { topic: k.term, volume, competition, opportunity, score: k.score };
     }).sort((a, b) => b.opportunity - a.opportunity);
   }, []);
@@ -1122,11 +1161,13 @@ function TrendRadarView({ isConnected }) {
   async function searchTrends() {
     if (!isConnected) return;
     setLoading(true);
+    setSearchError(null);
     try {
       const data = await YT_API.searchTrending(query);
       setResults(data.items || []);
     } catch (e) {
       console.error(e);
+      setSearchError(e.message);
     }
     setLoading(false);
   }
@@ -1155,6 +1196,11 @@ function TrendRadarView({ isConnected }) {
             <p style={{ fontSize: 12, color: "var(--accent-amber)", marginTop: 8 }}>
               Connect YouTube API in Settings to search live trends
             </p>
+          )}
+          {searchError && (
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", marginTop: 8, fontSize: 12, color: "var(--accent-red)" }}>
+              {searchError}
+            </div>
           )}
         </div>
       </div>
@@ -1244,7 +1290,7 @@ Audience: ${HC_CONTEXT.channel.audience}
 Niche: ${HC_CONTEXT.channel.niche}
 Top performing title formulas:
 ${HC_CONTEXT.patterns.titleFormulas.slice(0,5).map(f => `- ${f.label}: "${f.example}" (score: ${f.score}/100)`).join('\n')}
-Keywords that work well: ${HC_CONTEXT.keywords.primary.slice(0,8).join(', ')}
+Keywords that work well: ${HC_CONTEXT.patterns.keywords.slice(0,8).map(k => k.term).join(', ')}
 
 Generate exactly 6 YouTube video titles for the given topic. Each title should:
 - Be 50-70 characters long
@@ -1267,8 +1313,15 @@ Example: [{"title":"How I Closed My First VC Deal in 48 Hours","formula":"How I.
     }
   }
 
-  function copyTitle(title, idx) {
-    navigator.clipboard?.writeText(title);
+  async function copyTitle(title, idx) {
+    try {
+      await navigator.clipboard.writeText(title);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = title; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(idx);
     setTimeout(() => setCopied(null), 2000);
   }
@@ -1422,8 +1475,8 @@ function DescriptionBuilderView() {
     setAiDesc(null);
     const systemPrompt = `You are a YouTube description writer for "${HC_CONTEXT.channel.name}" — ${HC_CONTEXT.channel.tagline}.
 Channel audience: ${HC_CONTEXT.channel.audience}
-SEO keywords to weave in naturally: ${HC_CONTEXT.keywords.primary.slice(0,10).join(', ')}
-Long-tail phrases: ${HC_CONTEXT.keywords.longTail.slice(0,5).join(', ')}
+SEO keywords to weave in naturally: ${HC_CONTEXT.patterns.keywords.slice(0,10).map(k => k.term).join(', ')}
+Long-tail phrases: ${HC_CONTEXT.patterns.keywords.filter(k => k.score < 40).slice(0,5).map(k => k.term).join(', ')}
 
 Write a YouTube video description that:
 1. Opens with 2 compelling hook sentences (no intro fluff)
@@ -1449,16 +1502,27 @@ Timestamps: ${timestamps || "(not specified)"}`;
     }
   }
 
-  function copyDesc() {
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  }
+
+  async function copyDesc() {
     if (!result) return;
-    navigator.clipboard?.writeText(result.description);
+    await copyToClipboard(result.description);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function copyAiDesc() {
+  async function copyAiDesc() {
     if (!aiDesc) return;
-    navigator.clipboard?.writeText(aiDesc);
+    await copyToClipboard(aiDesc);
     setAiCopied(true);
     setTimeout(() => setAiCopied(false), 2000);
   }
@@ -1539,19 +1603,19 @@ Timestamps: ${timestamps || "(not specified)"}`;
             {result ? (
               <>
                 <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                  <span className="tag tag-blue">SEO Score: {result.seoScore}/50</span>
+                  <span className="tag tag-blue">SEO Score: {result.seoScore}/100</span>
                   <span className="tag tag-green">{result.keywords.length} keywords</span>
                 </div>
                 <div className="score-bar-wrap" style={{ marginBottom: 16 }}>
                   <div className="score-bar-bg">
                     <div className="score-bar-fill" style={{
-                      width: `${(result.seoScore / 50) * 100}%`,
-                      background: result.seoScore > 35 ? "var(--accent-green)" : "var(--accent-amber)"
+                      width: `${result.seoScore}%`,
+                      background: result.seoScore > 60 ? "var(--accent-green)" : "var(--accent-amber)"
                     }}></div>
                   </div>
                   <div className="score-bar-labels">
                     <span>SEO Score</span>
-                    <span>{result.seoScore}/50</span>
+                    <span>{result.seoScore}/100</span>
                   </div>
                 </div>
                 <div className="desc-output">{result.description}</div>
@@ -1588,6 +1652,15 @@ function ThumbnailReviewerView() {
       const analysis = await analyzeThumbnail(dataUrl);
       setResults(analysis);
       setLoading(false);
+    };
+    reader.onerror = () => {
+      setLoading(false);
+      setResults({
+        overallScore: 0, contrastScore: 0, compositionScore: 0, textReadability: 0, emotionClarity: 0,
+        dimensions: "N/A", aspectRatio: "N/A", isCorrectRatio: false, isHighRes: false, avgBrightness: 0,
+        feedback: [{ type: "error", msg: "Failed to read the file. Try a different image." }],
+        bestPractices: []
+      });
     };
     reader.readAsDataURL(file);
   }
@@ -1707,6 +1780,21 @@ function ThumbnailReviewerView() {
                   ))}
                 </div>
 
+                {results.bestPractices?.length > 0 && (
+                  <details style={{ marginTop: 16 }}>
+                    <summary style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", marginBottom: 8 }}>
+                      HC Thumbnail Best Practices ({results.bestPractices.length})
+                    </summary>
+                    {results.bestPractices.map((f, i) => (
+                      <div key={i} style={{
+                        padding: "6px 10px", marginBottom: 4, borderRadius: "var(--radius-sm)",
+                        background: f.type === "warning" ? "rgba(245,158,11,0.06)" : f.type === "success" ? "rgba(34,197,94,0.06)" : "rgba(74,124,255,0.04)",
+                        fontSize: 11, color: "var(--text-muted)"
+                      }}>{f.msg}</div>
+                    ))}
+                  </details>
+                )}
+
                 <div style={{ marginTop: 14, fontSize: 11, color: "var(--text-muted)" }}>
                   Dimensions: {results.dimensions} · Ratio: {results.aspectRatio}
                   {results.isCorrectRatio ? " ✓" : " (not 16:9)"}
@@ -1736,14 +1824,15 @@ function ClaudeSettingsSection() {
     if (!k) { setStatus("Please enter an API key"); return; }
     setSaving(true);
     setStatus("Verifying...");
+    const origKey = CLAUDE_API.getKey() || "";
     try {
-      await CLAUDE_API.setKey(k);
-      // Quick test call
+      CLAUDE_API.setKey(k);
       await CLAUDE_API.generate("You are a helpful assistant.", "Reply with just: OK");
       setStatus("✓ Claude AI connected successfully!");
     } catch(e) {
       setStatus(`Error: ${e.message}`);
-      CLAUDE_API.setKey("");
+      CLAUDE_API.setKey(origKey);
+      setKey(origKey);
     } finally {
       setSaving(false);
     }
@@ -1820,7 +1909,7 @@ function SettingsView({ apiKey, channelId, onSave, isConnected }) {
             <p>Get your key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener"
               style={{ color: "var(--accent-blue)" }}>Google Cloud Console</a>. Enable the YouTube Data API v3.</p>
             <div className="api-key-input">
-              <input type="text" value={key} onChange={e => setKey(e.target.value)}
+              <input type="password" value={key} onChange={e => setKey(e.target.value)}
                 placeholder="AIzaSy..." />
             </div>
           </div>
@@ -1893,6 +1982,8 @@ function App() {
   const [channelId, setChannelId] = useState(null);
   const [channelData, setChannelData] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [loadError, setLoadError] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const creds = YT_API.loadCredentials();
@@ -1904,6 +1995,7 @@ function App() {
   }, []);
 
   async function loadChannelData() {
+    setLoadError(null);
     try {
       const data = await YT_API.getChannelStats();
       setChannelData(data);
@@ -1911,6 +2003,7 @@ function App() {
       setVideos(vids);
     } catch (e) {
       console.error("Failed to load channel data:", e);
+      setLoadError(e.message);
     }
   }
 
@@ -1923,20 +2016,30 @@ function App() {
 
   const isConnected = YT_API.isConnected();
 
-  const viewMap = {
-    dashboard: <DashboardView isConnected={isConnected} channelData={channelData} videos={videos} />,
-    trends: <TrendRadarView isConnected={isConnected} />,
-    titles: <TitleGeneratorView />,
-    descriptions: <DescriptionBuilderView />,
-    thumbnails: <ThumbnailReviewerView />,
-    settings: <SettingsView apiKey={apiKey} channelId={channelId} onSave={handleSaveCredentials} isConnected={isConnected} />,
-  };
+  function navigate(v) {
+    setView(v);
+    setMobileMenuOpen(false);
+  }
 
   return (
     <div className="app-shell">
-      <Sidebar activeView={view} onNavigate={setView} isConnected={isConnected} />
-      <div className="main-content">
-        {viewMap[view] || viewMap.dashboard}
+      {mobileMenuOpen && <div className="mobile-overlay open" onClick={() => setMobileMenuOpen(false)}></div>}
+      <Sidebar activeView={view} onNavigate={navigate} isConnected={isConnected} className={mobileMenuOpen ? "mobile-open" : ""} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className="mobile-header">
+          <h1>B Intelligence</h1>
+          <button className="hamburger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </button>
+        </div>
+        <div className="main-content">
+          {view === "dashboard" && <DashboardView isConnected={isConnected} channelData={channelData} videos={videos} onNavigate={navigate} error={loadError} />}
+          {view === "trends" && <TrendRadarView isConnected={isConnected} />}
+          {view === "titles" && <TitleGeneratorView />}
+          {view === "descriptions" && <DescriptionBuilderView />}
+          {view === "thumbnails" && <ThumbnailReviewerView />}
+          {view === "settings" && <SettingsView apiKey={apiKey} channelId={channelId} onSave={handleSaveCredentials} isConnected={isConnected} />}
+        </div>
       </div>
     </div>
   );
